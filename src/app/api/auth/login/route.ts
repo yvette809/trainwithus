@@ -1,14 +1,14 @@
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
-import connectDb from "@/utils/connectDB";
+import connectToDB from "@/utils/connectDB";
 import UserModel from "@/models/UserModel";
 import generateToken from "@/utils/token";
-import errorResponse from "@/utils/errorResponse";
+import { errorResponse } from "@/utils/middleware";
 
 //login a user
 export async function POST(req: NextRequest, res: NextResponse) {
   try {
-    connectDb();
+    connectToDB();
     const { email, password } = await req.json();
     let user = await UserModel.findOne({ email });
     if (!user) {
@@ -18,9 +18,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
     }
 
     let isMatch = await bcrypt.compare(password, user.password);
-    generateToken(NextResponse.next(), user._id);
+    generateToken(user._id);
     if (!isMatch) {
-        return errorResponse("Invalid User credentials", 401);
+      return new NextResponse("Invalid User Credentials", {
+        status: 401,
+      });
     } else {
       return NextResponse.json({
         id: user._id,
@@ -31,10 +33,8 @@ export async function POST(req: NextRequest, res: NextResponse) {
     }
   } catch (error) {
     console.log(error);
-
-    return errorResponse(
-      "An error occurred while processing the request.",
-      500
-    );
+    return new NextResponse("An error occurred while processing the request.", {
+      status: 500,
+    });
   }
 }

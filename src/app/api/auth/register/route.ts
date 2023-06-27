@@ -1,14 +1,13 @@
-import connectDb from "@/utils/connectDB";
+import connectToDB from "@/utils/connectDB";
 import { genSalt, hash } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import UserModel from "@/models/UserModel";
 import generateToken from "@/utils/token";
-import errorResponse from "@/utils/errorResponse";
 
 export async function POST(req: NextRequest) {
   const res = NextResponse.next();
   try {
-    connectDb();
+    connectToDB();
 
     const {
       firstName,
@@ -23,7 +22,9 @@ export async function POST(req: NextRequest) {
 
     const userExist = await UserModel.findOne({ email });
     if (userExist) {
-      return errorResponse("User with that email already exists.", 401);
+      return new NextResponse("User with that email already exists.", {
+        status: 401,
+      });
     }
 
     const salt = await genSalt(10);
@@ -41,28 +42,27 @@ export async function POST(req: NextRequest) {
     });
 
     if (user) {
-      generateToken(res, user._id);
+      await user.save();
+      generateToken(user._id);
+      console.log("gentk", generateToken( user._id));
 
-      const savedUser = await user.save();
       const updatedUser = {
-        _id: savedUser._id,
-        firstName: savedUser.firstName,
-        lastName: savedUser.lastName,
-        email: savedUser.email,
-        role: savedUser.role,
-        specialisation: savedUser.specialisation,
-        experience: savedUser.experience,
-        availability: savedUser.availability,
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        specialisation: user.specialisation,
+        experience: user.experience,
+        availability: user.availability,
       };
 
       return NextResponse.json(updatedUser);
     }
   } catch (error) {
     console.error(error);
-
-    return errorResponse(
-      "An error occurred while processing the request.",
-      500
-    );
+    return new NextResponse("An error occurred while processing the request.", {
+      status: 500,
+    });
   }
 }

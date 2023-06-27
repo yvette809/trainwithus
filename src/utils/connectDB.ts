@@ -1,9 +1,8 @@
-
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGO_URI || "";
 
-export default function connectdb() {
+export default function connectToDB() {
   if (mongoose.connection.readyState === 0) {
     mongoose
       .connect(MONGODB_URI)
